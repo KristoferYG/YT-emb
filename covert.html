@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>YouTube Link Converter</title>
+
+<style>
+body{
+    font-family: Arial;
+    text-align:center;
+    margin-top:80px;
+}
+
+input{
+    width:60%;
+    padding:10px;
+    font-size:16px;
+}
+
+button{
+    padding:10px 20px;
+    font-size:16px;
+    cursor:pointer;
+}
+
+#result{
+    margin-top:20px;
+    font-size:18px;
+    word-break:break-all;
+}
+
+.copyBtn{
+    margin-left:10px;
+}
+</style>
+</head>
+
+<body>
+
+<h2>YouTube Link → Embed Link</h2>
+
+<input id="ytlink" placeholder="Paste any YouTube link here">
+
+<br><br>
+
+<button onclick="convert()">Generate</button>
+
+<div id="result"></div>
+
+<script>
+
+function extractID(url){
+
+    let id = null;
+
+    if(url.includes("youtu.be/")){
+        id = url.split("youtu.be/")[1];
+    }
+    else if(url.includes("watch?v=")){
+        id = url.split("watch?v=")[1];
+    }
+    else if(url.includes("shorts/")){
+        id = url.split("shorts/")[1];
+    }
+    else if(url.includes("embed/")){
+        id = url.split("embed/")[1];
+    }
+
+    if(id){
+        id = id.split("&")[0];
+        id = id.split("?")[0];
+    }
+
+    return id;
+}
+
+function convert(){
+
+    let link = document.getElementById("ytlink").value;
+
+    let id = extractID(link);
+
+    if(!id){
+        document.getElementById("result").innerHTML = "Invalid YouTube link";
+        return;
+    }
+
+    let finalLink = "https://kristoferyg.github.io/YT-emb/embed.html?v=" + id;
+
+    document.getElementById("result").innerHTML =
+    '<input id="out" value="'+finalLink+'" style="width:60%;padding:8px;">' +
+    '<button class="copyBtn" onclick="copy()">Copy</button>';
+}
+
+function copy(){
+
+    let text = document.getElementById("out");
+
+    text.select();
+    document.execCommand("copy");
+}
+
+</script>
+
+</body>
+</html>
