@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<style>
+  body { margin: 0; padding: 0; overflow: hidden; background-color: #000; cursor: crosshair; }
+  canvas { display: block; filter: contrast(1.2) brightness(1.2); }
+</style>
+</head>
+<body>
+<canvas id="matrix"></canvas>
+
+<script>
+const canvas = document.getElementById('matrix');
+const ctx = canvas.getContext('2d');
+
+canvas.width = window.innerWidth;
+canvas.height = window.innerHeight;
+
+const katakana = "アァカサタナハマヤャラワガザダバパイィキシチニヒミリヰギジヂビピウゥクスツヌフムユュルグズヅブプエェケセテネヘメレヱゲゼデベペオォコソトノホモヨョロヲゴゾドボポヴッン";
+const charArray = katakana.split("");
+
+const fontSize = 18;
+const columns = Math.floor(canvas.width / fontSize);
+const drops = [];
+const columnChars = []; 
+let mouse = { x: -1000, y: -1000 };
+
+// --- THE SEED & SPREAD ---
+// Using the clock to scramble the initial positions
+const initialSeed = new Date().getMilliseconds();
+
+for (let x = 0; x < columns; x++) {
+  // We spread them across the whole screen + 50 units above it to ensure overlap
+  drops[x] = Math.random() * (canvas.height / fontSize + 50) - 25;
+  
+  columnChars[x] = [];
+  for (let y = 0; y < 150; y++) {
+    columnChars[x][y] = charArray[Math.floor(Math.random() * charArray.length)];
+  }
+}
+
+window.addEventListener('mousemove', e => {
+  mouse.x = e.clientX;
+  mouse.y = e.clientY;
+});
+
+let frameCount = 0;
+
+function draw() {
+  ctx.shadowBlur = 0;
+  ctx.shadowColor = "transparent";
+  ctx.fillStyle = "#000";
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  ctx.font = `bold ${fontSize}px monospace`;
+  frameCount++;
+
+  for (let i = 0; i < drops.length; i++) {
+    const tailLength = 25; 
+    const xPos = i * fontSize;
+    
+    for (let j = 0; j < tailLength; j++) {
+      const charIndex = Math.floor(drops[i] - j);
+      const yPos = charIndex * fontSize;
+      
+      if (yPos < -fontSize || yPos > canvas.height + fontSize) continue;
+
+      const memoryIndex = Math.abs(charIndex % 150);
+      const dx = xPos - mouse.x;
+      const dy = yPos - mouse.y;
+      const isNearMouse = Math.sqrt(dx*dx + dy*dy) < 130;
+
+      // Random "bit-flip" flicker
+      if (frameCount % (isNearMouse ? 4 : 10) === 0 && Math.random() > 0.85) {
+        columnChars[i][memoryIndex] = charArray[Math.floor(Math.random() * charArray.length)];
+      }
+
+      const text = columnChars[i][memoryIndex] || charArray[0];
+      const opacity = 1 - (j / tailLength);
+
+      // GLOWING FONTS
+      if (j === 0 || isNearMouse) {
+        ctx.fillStyle = isNearMouse ? "#00FFFF" : "#FFFFFF"; 
+        ctx.shadowColor = isNearMouse ? "#00FFFF" : "#FFFFFF";
+        ctx.shadowBlur = isNearMouse ? 25 : 18;
+      } else {
+        ctx.fillStyle = `rgba(0, 255, 65, ${opacity})`;
+        ctx.shadowColor = "#00FF41";
+        ctx.shadowBlur = 10 * opacity;
+      }
+
+      ctx.fillText(text, xPos, yPos);
+    }
+
+    // SPEED: 0.10
+    drops[i] += 0.10; 
+
+    // --- THE FIX: RANDOM OVERLAP RESET ---
+    // When the tail finishes, reset to a random point ABOVE the screen
+    // This stops the "waves" from forming because every drop restarts at a different time
+    if ((drops[i] - tailLength) * fontSize > canvas.height) {
+      drops[i] = Math.random() * -20; 
+    }
+  }
+
+  requestAnimationFrame(draw);
+}
+
+requestAnimationFrame(draw);
+
+window.addEventListener('resize', () => {
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+});
+</script>
+</body>
+</html>
