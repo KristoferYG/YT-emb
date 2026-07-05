@@ -1,0 +1,826 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MGS Briefing - Full Manual Control</title>
+    <style>
+        :root {
+            --mgs-red: #cc0000;
+            --mgs-bg: #1a1a1a;
+            --mgs-text: #ffffff;
+        }
+
+        html, body { height: 100%; margin: 0; padding: 0; overflow: hidden; }
+
+       body {
+		background-color: #2C2C2C;
+		color: var(--mgs-text);
+		font-family: 'Oswald', 'Bebas Neue', sans-serif;
+		display: flex;
+		justify-content: center;
+		align-items: center;
+		/*text-transform: uppercase;*/
+		letter-spacing: 1px;
+		}
+
+        .briefing-container {
+            width: 1200px; height: 700px; 
+            background: rgba(10, 10, 10, 0.8);
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            display: flex; position: relative;
+            box-shadow: 0 0 50px rgba(0,0,0,0.8);
+            backdrop-filter: blur(10px);
+        }
+
+        .header {
+            position: absolute; top: 25px; left: 25px;
+            font-size: 28px; font-weight: bold; border-bottom: 2px solid white;
+            padding-bottom: 5px; z-index: 10;
+        }
+
+        .file-library {
+            width: 50%; margin-top: 90px; padding-left: 20px;
+            border-right: 1px solid rgba(255,255,255,0.1);
+            background: rgba(0, 0, 0, 0.4);
+            overflow-y: scroll; max-height: 580px; direction: rtl; 
+        }
+
+        /* Adaptive Scrollbar */
+        .file-library::-webkit-scrollbar { width: 8px; }
+        .file-library.not-scrolling::-webkit-scrollbar-track { background: #ffffff; }
+        .file-library.not-scrolling::-webkit-scrollbar-thumb { background: transparent; }
+        .file-library.is-scrolling::-webkit-scrollbar-track { background: transparent; }
+        .file-library.is-scrolling::-webkit-scrollbar-thumb { background: #ffffff; }
+
+        .menu-list { list-style: none; padding: 0; margin: 0; direction: ltr; }
+
+        .menu-item {
+            display: block; cursor: pointer; color: white; padding: 12px 15px; 
+            font-size: 18px; border-bottom: 1px solid rgba(255,255,255,0.05);
+            transition: all 0.2s ease; text-decoration: none; white-space: nowrap;
+        }
+
+        .menu-item:hover { background-color: var(--mgs-red); padding-left: 25px; }
+		
+        .sub-menu {
+            display: none; list-style: none; padding-left: 15px;
+            background: rgba(255, 255, 255, 0.03); border-left: 2px solid var(--mgs-red);
+        }
+
+        .active > .sub-menu { display: block; }
+
+        .portrait-area { width: 50%; display: flex; justify-content: center; align-items: center; }
+        .portrait-card {
+            width: 320px; height: 440px; background-color: #333; border: 10px solid #fff;
+            position: relative; overflow: hidden;
+        }
+        .portrait-img { width: 100%; height: 100%; object-fit: cover; transition: opacity 0.2s; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="briefing-container">
+        <div class="header">BRIEFING FILES</div>
+        <div class="file-library not-scrolling" id="library">
+            <nav class="menu-list" id="main-nav"></nav>
+        </div>
+        <div class="portrait-area">
+            <div class="portrait-card">
+                <img src="" alt="Portrait" class="portrait-img" id="portrait" style="opacity: 0;">
+                <div class="scanlines"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const briefingData = [
+            {character: "Miller", 
+                portrait: "https://static.wixstatic.com/media/81db72_4298683c9c754fb0aa54dfb77bd1c766~mv2.png",
+                folders: [
+                    { 
+                        folderName: "Mother-Base", 
+                        files: [
+                            { title: "Offshore plant", url: "https://kristoferyg.github.io/YT-emb/embed.html?v=0dS8I0fAb0Q" },
+							{ title: "New plant", url: "https://kristoferyg.github.io/YT-emb/embed.html?v=YBciB_JPteA" },
+							{ title: "Queen bee", url: "https://kristoferyg.github.io/YT-emb/embed.html?v=wREAOL79rTQ" },
+                            { title: "Fulton Recovery", url: "https://kristoferyg.github.io/YT-emb/embed.html?v=85T0YLR89mc" }
+                        ] 
+						
+                    },
+					{ 
+                        folderName: "MSF", 
+                        files: [
+                            { title: "Militaires Sans Frontières", url: "https://kristoferyg.github.io/YT-emb/embed.html?v=c92MQ0hfn54" },
+							{ title: "MSF's Goals", url: "https://kristoferyg.github.io/YT-emb/embed.html?v=5iGIHVizu3Q" },
+							{ title: "Special Forces", url: "https://kristoferyg.github.io/YT-emb/embed.html?v=vhhl2O7kQE4" },
+                            { title: "The Need for Metal Gear", url: "https://kristoferyg.github.io/YT-emb/embed.html?v=iJR9JNp4Hpk" }
+                        ] 
+						
+                    },
+					{ 
+                        folderName: "Clients", 
+                        files: [
+                            { title: "Gálvez", url: "https://kristoferyg.github.io/YT-emb/embed.html?v=Y5eM715_bW4" },
+							{ title: "Paz", url: "https://kristoferyg.github.io/YT-emb/embed.html?v=kUMb1-HskSI" },
+							{ title: "Snuff Tobacco", url: "https://kristoferyg.github.io/YT-emb/embed.html?v=uRxhFwHpWbk" },
+                            { title: "CIPHER", url: "https://kristoferyg.github.io/YT-emb/embed.html?v=ALb_OUo8ViQ" }
+                        ] 
+						
+                    },
+					{ 
+                        folderName: "Cold war", 
+                        files: [
+                            { title: "The Cold War", url: "https://kristoferyg.github.io/YT-emb/embed.html?v=VCCLrPev2j4" },
+							{ title: "Nuclear Deterrence And Mutual Assured Destruction", url: "https://kristoferyg.github.io/YT-emb/embed.html?v=IvdXk2OnP4M" },
+                            { title: "The Cold War and Peace", url: "https://kristoferyg.github.io/YT-emb/embed.html?v=no2G0n7XEno" }
+                        ] 
+						
+                    },
+					{ 
+                        folderName: "Situation in Central America", 
+                        files: [
+                            { title: "The Cuban Missile Crisis", url: "https://kristoferyg.github.io/YT-emb/embed.html?v=z1wuy2j2ZcY" },
+                            { title: "Treat of Tlatelolco", url: "https://kristoferyg.github.io/YT-emb/embed.html?v=KZjg4bvT-Sg" },
+							{ title: "Costa Rica's Abolition of its army ", url: "https://kristoferyg.github.io/YT-emb/embed.html?v=OI90DP2TxRQ" },
+							{ title: "The CIA's activities in Central America", url: "https://kristoferyg.github.io/YT-emb/embed.html?v=chxYF2gEF-c" },
+							{ title: "How to prononce ''CIA''", url: "https://kristoferyg.github.io/YT-emb/embed.html?v=iUVA95hmhEM" },
+							{ title: "The CIA-KGB relationship", url: "https://kristoferyg.github.io/YT-emb/embed.html?v=A5Vx9VFpg5Y" },
+							{ title: "Grenada", url: "https://kristoferyg.github.io/YT-emb/embed.html?v=U5GLuTULiac" }
+                        ] 
+						
+                    },
+					{ 
+                        folderName: "A Great Leader", 
+                        files: [
+                            { title: "Che Guevara", url: "https://kristoferyg.github.io/YT-emb/embed.html?v=gEixIUcnz0E" },
+							{ title: "Che's Footsteps", url: "https://kristoferyg.github.io/YT-emb/embed.html?v=gEixIUcnz0E" },
+							{ title: "The history of Guerilla Warfare", url: "https://kristoferyg.github.io/YT-emb/embed.html?v=QCua-elnTCk" },
+							{ title: "Maté", url: "https://kristoferyg.github.io/YT-emb/embed.html?v=h6-h0WnagSw" },
+							{ title: "Che's visit to Hiroshima", url: "https://kristoferyg.github.io/YT-emb/embed.html?v=gqor7B2Yu7w" },
+                            { title: "Scarf", url: "https://kristoferyg.github.io/YT-emb/embed.html?v=bskaXVk91aE" }
+                        ] 
+						
+                    },
+					{ 
+                        folderName: "Peace Constitutions", 
+                        files: [
+                            { title: "Peace Constitution of Japan", url: "https://kristoferyg.github.io/YT-emb/embed.html?v=zaGngPEi6rU" },
+							{ title: "Article 9 and the JSDF", url: "https://kristoferyg.github.io/YT-emb/embed.html?v=RdgRQm12lJs" },
+							{ title: "The US-Japan Security Treaty", url: "https://kristoferyg.github.io/YT-emb/embed.html?v=H6XCsFfwB_I" },
+							{ title: "The Nuclear Umbrella", url: "https://kristoferyg.github.io/YT-emb/embed.html?v=wddkN5_KmVo" },
+							{ title: "The Three Non-Nuclear Principles", url: "https://kristoferyg.github.io/YT-emb/embed.html?v=jWyAPL61UTs" },
+							{ title: "The JSDF", url: "https://kristoferyg.github.io/YT-emb/embed.html?v=EeezupZstdA" },
+                            { title: "Why miller quit the JSDF", url: "https://kristoferyg.github.io/YT-emb/embed.html?v=pOJGzKF7viQ" }
+                        ] 
+						
+                    },
+					{ 
+                        folderName: "About Himself", 
+                        files: [
+                            { title: "Roles within the Mother Base", url: "https://kristoferyg.github.io/YT-emb/embed.html?v=wpeRfVHntU4" },
+							{ title: "Upbringing", url: "https://kristoferyg.github.io/YT-emb/embed.html?v=TO039Z4FuhA" },
+                            { title: "How Miller met Sake", url: "https://kristoferyg.github.io/YT-emb/embed.html?v=r71JohxrczU" }
+                        ] 
+						
+                    },
+					{ 
+                        folderName: "The Fundamentals of Stealth", 
+                        files: [
+                            { title: "Sneaking Mission", url: "https://kristoferyg.github.io/YT-emb/embed.html?v=xKF0a3D04co" },
+							{ title: "Effective Use of Fulton Recovery", url: "https://kristoferyg.github.io/YT-emb/embed.html?v=WiiftW5F4JY" },
+							{ title: "Body Cheaks", url: "https://kristoferyg.github.io/YT-emb/embed.html?v=8FP9Wajksmg" },
+							{ title: "Weight Carried", url: "https://kristoferyg.github.io/YT-emb/embed.html?v=Rd8pqylM3zk" },
+							{ title: "Aim Tremors", url: "https://kristoferyg.github.io/YT-emb/embed.html?v=7jKhCCvC0DY" },
+							{ title: "Dressing for the Mission", url: "https://kristoferyg.github.io/YT-emb/embed.html?v=TcPeCobIYDM" },
+							{ title: "Jungle Fatigues", url: "https://kristoferyg.github.io/YT-emb/embed.html?v=k0lWAwszECY" },
+							{ title: "Sneaking Suit", url: "https://kristoferyg.github.io/YT-emb/embed.html?v=WYU1noejMXI" },
+							{ title: "Battle Dress", url: "https://kristoferyg.github.io/YT-emb/embed.html?v=Npitq-Tkk50" },
+                            { title: "Naked", url: "https://kristoferyg.github.io/YT-emb/embed.html?v=zb9Rn_3SbAE" }
+                        ] 
+						
+                    },
+					{ 
+                        folderName: "CO-OPS", 
+                        files: [
+                            { title: "CO-OPS", url: "https://kristoferyg.github.io/YT-emb/embed.html?v=xULp_TWKl_c" },
+							{ title: "CO-OP Ring", url: "https://kristoferyg.github.io/YT-emb/embed.html?v=4D5MWCfGrQc" },
+							{ title: "Snake Formation", url: "https://kristoferyg.github.io/YT-emb/embed.html?v=rtIiIi0YXSg" },
+							{ title: "CPR", url: "https://kristoferyg.github.io/YT-emb/embed.html?v=IorTI5R2RMM" },
+							{ title: "Camaraderie", url: "https://kristoferyg.github.io/YT-emb/embed.html?v=5dGDFm5h1-4" },
+							{ title: "Snake Sync", url: "https://kristoferyg.github.io/YT-emb/embed.html?v=Fmx3IBsef-M" },
+							{ title: "Heroism", url: "https://kristoferyg.github.io/YT-emb/embed.html?v=EZQjypqSp3A" },
+							{ title: "CO-OPS Weapons", url: "https://kristoferyg.github.io/YT-emb/embed.html?v=3wtzLa2NF-0" },
+							{ title: "CO-OPS Comms", url: "https://kristoferyg.github.io/YT-emb/embed.html?v=1MkHW00EHFE" },
+                            { title: "Battle Cries & the Kotodama Effect", url: "https://kristoferyg.github.io/YT-emb/embed.html?v=gZK6vL64Z8M" }
+                        ] 
+						
+                    },
+					{ 
+                        folderName: "Special Items", 
+                        files: [
+                            { title: "Cardboard box", url: "https://kristoferyg.github.io/YT-emb/embed.html?v=dSLhlRObqZg" },
+							{ title: "Two Men in a Box", url: "https://kristoferyg.github.io/YT-emb/embed.html?v=z0jxq9LlHkg" },
+							{ title: "Cardboard Tank", url: "https://kristoferyg.github.io/YT-emb/embed.html?v=2T-p15OR0BM" },
+                            { title: "WALKMAN", url: "https://kristoferyg.github.io/YT-emb/embed.html?v=K6DmtgrE62c" }
+                        ] 
+						
+                    },
+					{ 
+                        folderName: "Enemy Soldier Types", 
+                        files: [
+                            { title: "CIA Mercenaries", url: "https://kristoferyg.github.io/YT-emb/embed.html?v=BGKp0SbtQ9A" },
+							{ title: "Patrolmen & Guard", url: "https://kristoferyg.github.io/YT-emb/embed.html?v=ZsNnr6QNLEc" },
+							{ title: "Commandos", url: "https://kristoferyg.github.io/YT-emb/embed.html?v=o0gxcLXQW5Y" },
+							{ title: "Shock Troops", url: "https://kristoferyg.github.io/YT-emb/embed.html?v=3RmlQw9qU-k" },
+							{ title: "Scouts", url: "https://kristoferyg.github.io/YT-emb/embed.html?v=2v4wUJzv6xs" },
+							{ title: "Ghillie Suit Solders", url: "https://kristoferyg.github.io/YT-emb/embed.html?v=QMb2hDRzjiM" },
+							{ title: "Sentries", url: "https://kristoferyg.github.io/YT-emb/embed.html?v=_uXbpXs75Q8" },
+							{ title: "Escorts", url: "https://kristoferyg.github.io/YT-emb/embed.html?v=hjnK4T9qAag" },
+							{ title: "Shield Solders", url: "https://kristoferyg.github.io/YT-emb/embed.html?v=6_G_KsJ_1Fs" },
+                            { title: "Solder Level", url: "https://kristoferyg.github.io/YT-emb/embed.html?v=4zGoOBFrcYE" }
+                        ] 
+						
+                    },
+					{ 
+                        folderName: "Battle Range", 
+                        files: [
+                            { title: "Diffenences in range Between Different Weapons", url: "https://kristoferyg.github.io/YT-emb/embed.html?v=NTR3xhYi63w" },
+							{ title: "Close Range", url: "https://kristoferyg.github.io/YT-emb/embed.html?v=VzR830m_ibQ" },
+							{ title: "Medium Range", url: "https://kristoferyg.github.io/YT-emb/embed.html?v=ZZKFjB3Jxr4" },
+                            { title: "Long Range", url: "https://kristoferyg.github.io/YT-emb/embed.html?v=z2zTNrpILuw" }
+                        ] 
+						
+                    }
+                ]
+            },
+            {character: "Paz", 
+                portrait: "https://static.wixstatic.com/media/81db72_2a47f567d3e544689c9f64034524ec46~mv2.png",
+                folders: [
+				{
+				folderName: "Costa Rica",
+					files: [
+							{ title: "Costa Rica", url: "https://kristoferyg.github.io/YT-emb/embed.html?v=lYuRY-B57zA" },
+							{ title: "The Civil War", url: "https://kristoferyg.github.io/YT-emb/embed.html?v=Vi6y3UwzeTs" },
+							{ title: "Policy Shift", url: "https://kristoferyg.github.io/YT-emb/embed.html?v=r5yWMEFWgqc" },
+							{ title: "University for Peace", url: "https://kristoferyg.github.io/YT-emb/embed.html?v=BkdyBt4sWog" },
+							{ title: "Professor Galvez", url: "https://kristoferyg.github.io/YT-emb/embed.html?v=cZxYYTB19CA" },
+							{ title: "Costa Rican Coffee", url: "https://kristoferyg.github.io/YT-emb/embed.html?v=xKNPwcdrO2c" },
+							{ title: "Costa Rican Ruins", url: "https://kristoferyg.github.io/YT-emb/embed.html?v=Dq4ZB5kL9jk" }
+							]
+						},
+					{
+    folderName: "Costa Rica's Unarmed Neutrality",
+    files: [
+        { title: "Article 12 of the Constitution", url: "https://kristoferyg.github.io/YT-emb/embed.html?v=70QTxxZIo1Q" },
+        { title: "How it Keeps the Peace", url: "https://kristoferyg.github.io/YT-emb/embed.html?v=fYoV6d7J2Jk" },
+        { title: "The Reason the Army was Abolished", url: "https://kristoferyg.github.io/YT-emb/embed.html?v=iKpICyksaTo" },
+        { title: "Japan's Peace Constitution", url: "https://kristoferyg.github.io/YT-emb/embed.html?v=ZTCugS6H4hg" },
+        { title: "Perpetual Peace", url: "https://kristoferyg.github.io/YT-emb/embed.html?v=xnGOVR1dovw" }
+    ]
+},
+					{
+    folderName: "Costa Rica's Natural Environment",
+    files: [
+        { title: "Costa Rica's Tropical Forests", url: "https://kristoferyg.github.io/YT-emb/embed.html?v=yTfzOYjCekw" },
+        { title: "Tropical Rain Forest", url: "https://kristoferyg.github.io/YT-emb/embed.html?v=74EVGDiq0eo" },
+        { title: "Tropical Dry Forest", url: "https://kristoferyg.github.io/YT-emb/embed.html?v=q3V4pS_VgLE" },
+        { title: "Tropical Cloud Forest", url: "https://kristoferyg.github.io/YT-emb/embed.html?v=Nwv2UDuli9I" },
+        { title: "Morpho Butterflies", url: "https://kristoferyg.github.io/YT-emb/embed.html?v=EaCuYbi7OtQ" },
+        { title: "Biological Diversity", url: "https://kristoferyg.github.io/YT-emb/embed.html?v=GHaOLDvbtcI" },
+        { title: "Costa Rican Development Corporation", url: "https://kristoferyg.github.io/YT-emb/embed.html?v=0sZcfaTHqow" }
+    ]
+},
+{
+    folderName: "About Herself",
+    files: [
+        { title: "''Paz''", url: "https://kristoferyg.github.io/YT-emb/embed.html?v=ifLfLr0raz0" },
+        { title: "The Peace Sign", url: "https://kristoferyg.github.io/YT-emb/embed.html?v=C-sWBRKYrTU" },
+        { title: "Childhood", url: "https://kristoferyg.github.io/YT-emb/embed.html?v=u_Ka3s0nTfc" },
+        { title: "Role in Mother Base", url: "https://kristoferyg.github.io/YT-emb/embed.html?v=Rk6vwT21bnM" }
+    ]
+},
+					{
+    folderName: "Costa Rican Coast",
+    files: [
+        { title: "Playa del Alba", url: "https://kristoferyg.github.io/YT-emb/embed.html?v=gIIhqVZv3yE" },
+        { title: "Bosque del Alba", url: "https://kristoferyg.github.io/YT-emb/embed.html?v=mX4aKOjiPY4" },
+        { title: "Puerto del Alba", url: "https://kristoferyg.github.io/YT-emb/embed.html?v=cZdInmM-Czs" }
+    ]
+},
+					{
+    folderName: "Eastern Limon",
+    files: [
+        { title: "El Cenegal - Jungle", url: "https://kristoferyg.github.io/YT-emb/embed.html?v=qWq4Ss5WAro" },
+        { title: "El Cenegal - Ravine", url: "https://kristoferyg.github.io/YT-emb/embed.html?v=S1gfa24_A0Y" },
+        { title: "El Cenegal - Swamp", url: "https://kristoferyg.github.io/YT-emb/embed.html?v=DP1onN0Jjtw" },
+        { title: "Rio del Jade", url: "https://kristoferyg.github.io/YT-emb/embed.html?v=xUz4oealxHs" },
+        { title: "Bananal Fruta de Oro - Sorting Shed", url: "https://kristoferyg.github.io/YT-emb/embed.html?v=tOzlbeYqxwo" },
+        { title: "Bananal Fruta de Oro - Farm", url: "https://kristoferyg.github.io/YT-emb/embed.html?v=3lMOFW9a5qM" }
+    ]
+},
+					{
+    folderName: "Mt. Irazu Area",
+    files: [
+        { title: "Camino de Lava - Hillside", url: "https://kristoferyg.github.io/YT-emb/embed.html?v=X3YorQ0JHoc" },
+        { title: "Camino de Lava - Junction", url: "https://kristoferyg.github.io/YT-emb/embed.html?v=PjSat1FrF4M" },
+        { title: "Aldea de los Despiertos", url: "https://kristoferyg.github.io/YT-emb/embed.html?v=z45JDfQRtZo" },
+        { title: "Cafetal Aroma Encantado", url: "https://kristoferyg.github.io/YT-emb/embed.html?v=Bz_j7p0yMxw" },
+        { title: "El Cadalso", url: "https://kristoferyg.github.io/YT-emb/embed.html?v=uMBcDoc4utA" },
+        { title: "Los Cantos - Canyon", url: "https://kristoferyg.github.io/YT-emb/embed.html?v=1-8h7cTHu2Y" },
+        { title: "Los Cantos - Ridge", url: "https://kristoferyg.github.io/YT-emb/embed.html?v=fo6UaCutvIw" },
+        { title: "Fuerte la Ladera", url: "https://kristoferyg.github.io/YT-emb/embed.html?v=H4fLBkXY6HQ" },
+        { title: "Crater Base", url: "https://kristoferyg.github.io/YT-emb/embed.html?v=zbQcDlxr-ps" }
+    ]
+},
+					{
+    folderName: "Central Heredia",
+    files: [
+        { title: "Selva de la Leche - Jungle", url: "https://kristoferyg.github.io/YT-emb/embed.html?v=1mmFI-GmFuw" },
+        { title: "Selva de la Leche - Hillside", url: "https://kristoferyg.github.io/YT-emb/embed.html?v=bmzBYQ_umK0" },
+        { title: "Catarata de la Muerte", url: "https://kristoferyg.github.io/YT-emb/embed.html?v=lbpSLjj2BSU" },
+		{ title: "Selva de la Muerte", url: "https://kristoferyg.github.io/YT-emb/embed.html?v=TShHG9d0pvk" },
+        { title: "Ruinas de Xochiquetzal", url: "https://kristoferyg.github.io/YT-emb/embed.html?v=RxGUNfo2kUI" },
+        { title: "AI Lab", url: "https://kristoferyg.github.io/YT-emb/embed.html?v=jxtMzyIs80s" }
+    ]
+},
+					{
+    folderName: "Mine Base",
+    files: [
+        { title: "Miner's Residence", url: "https://kristoferyg.github.io/YT-emb/embed.html?v=BU_i4nWELcU" },
+        { title: "Mining Pit", url: "https://kristoferyg.github.io/YT-emb/embed.html?v=NMe4V7y0Rw8" }
+    ]
+}
+                ]
+            },
+            {character: "Amanda", 
+                portrait: "https://static.wixstatic.com/media/81db72_44a9444ce6c54b84b7a1cd8b5a23bab6~mv2.png",
+                folders: [
+				{
+    folderName: "Nicaragua",
+    files: [
+        { title: "History", url: "https://kristoferyg.github.io/YT-emb/embed.html?v=hR-v3QaKG3g" },
+		{ title: "The Nicaragua Canal", url: "https://kristoferyg.github.io/YT-emb/embed.html?v=gWvv60O9bgM" },
+		{ title: "Sandino's Rebellation", url: "https://kristoferyg.github.io/YT-emb/embed.html?v=3ECy47Sk0iU" },
+        { title: "Somoza", url: "https://kristoferyg.github.io/YT-emb/embed.html?v=voJqrXHrfog" },
+		{ title: "Sandino's assassination", url: "https://kristoferyg.github.io/YT-emb/embed.html?v=X-cTZzMVTIY" },
+        { title: "The Managua Earthquake", url: "https://kristoferyg.github.io/YT-emb/embed.html?v=QzAepVpvIdw" },
+		{ title: "Rio San Juan", url: "https://kristoferyg.github.io/YT-emb/embed.html?v=V_LdfvFWrUA" },
+        { title: "Ometepe Island", url: "https://kristoferyg.github.io/YT-emb/embed.html?v=cKF5gErwB70" }
+    ]
+},
+{
+    folderName: "FSLN",
+    files: [
+        { title: "FSLN", url: "https://kristoferyg.github.io/YT-emb/embed.html?v=SyiAx2znWkE" },
+        { title: "General Sandino", url: "https://kristoferyg.github.io/YT-emb/embed.html?v=mttN8xSgrPc" },
+        { title: "The ''Watermelon Sellers''", url: "https://kristoferyg.github.io/YT-emb/embed.html?v=B-HNlPY9Xls" },
+        { title: "A Revolution for Peace", url: "https://kristoferyg.github.io/YT-emb/embed.html?v=k-UnyDpy92A" },
+        { title: "El Che", url: "https://kristoferyg.github.io/YT-emb/embed.html?v=iDGc9YVFiT8" }
+    ]
+},
+					{
+    folderName: "Enemy Strength",
+    files: [
+        { title: "Hombre Nuevo", url: "https://kristoferyg.github.io/YT-emb/embed.html?v=PV_lgnz9ItY" },
+		{ title: "Abduction", url: "https://kristoferyg.github.io/YT-emb/embed.html?v=BtrJFFGr36o" },
+        { title: "The CIA's Strength", url: "https://kristoferyg.github.io/YT-emb/embed.html?v=ngH-Q5FuQKs" }
+    ]
+},
+{
+    folderName: "Relations with the U.S.",
+    files: [
+        { title: "Plantations", url: "https://kristoferyg.github.io/YT-emb/embed.html?v=LYZsKMDDncI" },
+        { title: "Drugs", url: "https://kristoferyg.github.io/YT-emb/embed.html?v=1-o4R44Y584" },
+        { title: "William Walker", url: "https://kristoferyg.github.io/YT-emb/embed.html?v=Uvbb3VavyLU" }
+    ]
+},
+{
+    folderName: "About Herself",
+    files: [
+        { title: "Joining FSLN", url: "https://kristoferyg.github.io/YT-emb/embed.html?v=IWBLXV6ntMU" },
+        { title: "Malaria", url: "https://kristoferyg.github.io/YT-emb/embed.html?v=bfYoQCbnG6c" },
+        { title: "Mi Viejo", url: "https://kristoferyg.github.io/YT-emb/embed.html?v=gi69IgXThwc" },
+        { title: "Chico", url: "https://kristoferyg.github.io/YT-emb/embed.html?v=h2kk_z42pac" },
+        { title: "Role at Mother Base", url: "https://kristoferyg.github.io/YT-emb/embed.html?v=FrnGSA5R16s" },
+        { title: "Decision Time", url: "https://kristoferyg.github.io/YT-emb/embed.html?v=UDgrcdot_vI" }
+    ]
+}
+				]
+            },
+            {character: "Chico", 
+                portrait: "https://static.wixstatic.com/media/81db72_7f100fbbe4cd48f493dc7d2016675e7c~mv2.png",
+                folders: [
+				{
+    folderName: "Geographical Info",
+    files: [
+        { title: "Supply Staging Point", url: "https://kristoferyg.github.io/YT-emb/embed.html?v=yt7T0rjXHwM" },
+        { title: "River Valley", url: "https://kristoferyg.github.io/YT-emb/embed.html?v=bfcAmr6jYiI" },
+        { title: "The Real Basilisco", url: "https://kristoferyg.github.io/YT-emb/embed.html?v=tud_z9T4BaY" },
+        { title: "Crater Area", url: "https://kristoferyg.github.io/YT-emb/embed.html?v=6A4vLI_aV-w" },
+        { title: "The Loch Ness Monster", url: "https://kristoferyg.github.io/YT-emb/embed.html?v=sa7hVnnm4YU" },
+        { title: "Nahuelito", url: "https://kristoferyg.github.io/YT-emb/embed.html?v=f1TNheUzlm8" },
+        { title: "Ogopogo", url: "https://kristoferyg.github.io/YT-emb/embed.html?v=LrdXlIdUBZk" },
+        { title: "Mokele-Mbembe", url: "https://kristoferyg.github.io/YT-emb/embed.html?v=anABqpVV9FE" },
+        { title: "Tropical Cloud Forest", url: "https://kristoferyg.github.io/YT-emb/embed.html?v=JfpVXj_ja8s" },
+        { title: "Bigfoot", url: "https://kristoferyg.github.io/YT-emb/embed.html?v=xI_50F2CYFI" },
+        { title: "Mono Grande", url: "https://kristoferyg.github.io/YT-emb/embed.html?v=o2iZCfTkMUo" },
+        { title: "Ruins", url: "https://kristoferyg.github.io/YT-emb/embed.html?v=cb4ZI2vDnuE" },
+        { title: "Kongamato", url: "https://kristoferyg.github.io/YT-emb/embed.html?v=HAYs4PuaF8E" },
+        { title: "Mine Base", url: "https://kristoferyg.github.io/YT-emb/embed.html?v=r0VUnWc8D14" },
+        { title: "UFOs", url: "https://kristoferyg.github.io/YT-emb/embed.html?v=Qx0bOM9QANw" },
+        { title: "Abductions", url: "https://kristoferyg.github.io/YT-emb/embed.html?v=cXa_IEUF_hM" },
+        { title: "Elbakki", url: "https://kristoferyg.github.io/YT-emb/embed.html?v=G88ehwFKbWE" },
+        { title: "UFO Photo", url: "https://kristoferyg.github.io/YT-emb/embed.html?v=O15LcNE2slY" }
+    ]
+},
+{
+    folderName: "The Legend of Isla del Monstruo",
+    files: [
+        { title: "Isla del Monstruo", url: "https://kristoferyg.github.io/YT-emb/embed.html?v=_AlOnOB7IZU" },
+        { title: "Trenya", url: "https://kristoferyg.github.io/YT-emb/embed.html?v=0PZuAJI57w4" },
+        { title: "Felynes", url: "https://kristoferyg.github.io/YT-emb/embed.html?v=nQkgJ_GwuT8" },
+        { title: "Rathalos", url: "https://kristoferyg.github.io/YT-emb/embed.html?v=JyrgNf71mLI" },
+        { title: "Tigrex", url: "https://kristoferyg.github.io/YT-emb/embed.html?v=TBCvWGvPi7k" },
+        { title: "Velocipreys", url: "https://kristoferyg.github.io/YT-emb/embed.html?v=W86HubP4xe4" },
+        { title: "Gear REX", url: "https://kristoferyg.github.io/YT-emb/embed.html?v=UIQUUec7Irg" }
+    ]
+},
+{
+    folderName: "About Himself",
+    files: [
+        { title: "Amanda", url: "https://kristoferyg.github.io/YT-emb/embed.html?v=BF-raWy-Rss" },
+        { title: "Father", url: "https://kristoferyg.github.io/YT-emb/embed.html?v=8TXlasjNfMA" },
+        { title: "Quotes from Che", url: "https://kristoferyg.github.io/YT-emb/embed.html?v=GK6km-AmMQ0" },
+        { title: "Frente Compas", url: "https://kristoferyg.github.io/YT-emb/embed.html?v=_bK-qmTPD68" },
+        { title: "Role in Mother Base", url: "https://kristoferyg.github.io/YT-emb/embed.html?v=wMg_r5T8MWA" }
+    ]
+},
+{
+    folderName: "Love",
+    files: [
+        { title: "Puppy Love", url: "https://kristoferyg.github.io/YT-emb/embed.html?v=Fv0LxNHIhqI" },
+        { title: "Paz's True Self", url: "https://kristoferyg.github.io/YT-emb/embed.html?v=tqece-pr0xE" },
+        { title: "The Mystery of Paz's Actions", url: "https://kristoferyg.github.io/YT-emb/embed.html?v=KAeW3sI9E-E" }
+    ]
+}
+				]
+            },
+            {character: "Huey", 
+                portrait: "https://static.wixstatic.com/media/81db72_cffe6efacdc4432a95d59374c25aa4cc~mv2.png",
+                folders: [
+				{
+    folderName: "Cold War and Nuclear Arms Race",
+    files: [
+        { title: "The Manhattan Project", url: "https://kristoferyg.github.io/YT-emb/embed.html?v=YTUZQDCL8Dg" },
+        { title: "Hiroshima and Nagasaki", url: "https://kristoferyg.github.io/YT-emb/embed.html?v=gOfYCVgkSzk" },
+		{ title: "Cuban Missile Crisis", url: "https://kristoferyg.github.io/YT-emb/embed.html?v=GTD4xFdW424" },
+        { title: "The Space Race and the Cold War Arms Race", url: "https://kristoferyg.github.io/YT-emb/embed.html?v=crBoOuFWsZ8" },
+        { title: "The Cold War and Peace", url: "https://kristoferyg.github.io/YT-emb/embed.html?v=dYEMCLTRFKA" }
+    ]
+},
+{
+    folderName: "Nuclear Deterrence",
+    files: [
+        { title: "Nuclear Deterrence Theory", url: "https://kristoferyg.github.io/YT-emb/embed.html?v=xxW4TmHsfyc" },
+        { title: "Nuclear Terrorism", url: "https://kristoferyg.github.io/YT-emb/embed.html?v=KzGank8LX4M" },
+		{ title: "Damage from a Nuclear Missile", url: "https://kristoferyg.github.io/YT-emb/embed.html?v=e35VMYsuzkY" },
+        { title: "Metal Gear and Nuclear Weapons", url: "https://kristoferyg.github.io/YT-emb/embed.html?v=j2wDAHrtmIY" }
+    ]
+},
+{
+    folderName: "Peace Walker",
+    files: [
+        { title: "Peace Walker Project", url: "https://kristoferyg.github.io/YT-emb/embed.html?v=H3IFYpqGvQI" },
+        { title: "Mobile Nuclear Launch Platform", url: "https://kristoferyg.github.io/YT-emb/embed.html?v=0-nSDPE-D6Y" },
+        { title: "Self-destruction Function", url: "https://kristoferyg.github.io/YT-emb/embed.html?v=WPvkA-tQHnE" },
+		{ title: "Tsar Bomba", url: "https://kristoferyg.github.io/YT-emb/embed.html?v=Bu--14b2e4Y" },
+		{ title: "Peace Walker's AI", url: "https://kristoferyg.github.io/YT-emb/embed.html?v=u0McChNnuAM" },
+        { title: "Fighting Peace Walker", url: "https://kristoferyg.github.io/YT-emb/embed.html?v=3DfFHQnlrM8" },
+        { title: "Peace Walker with Mammal Pod", url: "https://kristoferyg.github.io/YT-emb/embed.html?v=3myQ4NoOgSA" },
+        { title: "The Need for Bipedal Locomotion", url: "https://kristoferyg.github.io/YT-emb/embed.html?v=Ioxz_WeAfeE" },
+        { title: "The Fake ''Peace Walker'' Project", url: "https://kristoferyg.github.io/YT-emb/embed.html?v=J-o2zn8BAtw" },
+        { title: "The Reason for launching a Real Nuke", url: "https://kristoferyg.github.io/YT-emb/embed.html?v=wuINSppJQvI" },
+		{ title: "Soviet Research on Bipedal Locomotion", url: "https://kristoferyg.github.io/YT-emb/embed.html?v=wuINSppJQvI" },
+		{ title: "Granin", url: "https://kristoferyg.github.io/YT-emb/embed.html?v=VV5mOK0jswE" },
+        { title: " ''Metal Gear'' ", url: "https://kristoferyg.github.io/YT-emb/embed.html?v=on-AZMfJqdE" },
+        { title: "Shagohod", url: "https://kristoferyg.github.io/YT-emb/embed.html?v=sY3P1n92ato" },
+        { title: "Basilisk", url: "https://kristoferyg.github.io/YT-emb/embed.html?v=kc7CtM09wcA" },
+        { title: "The Two AI Pods", url: "https://kristoferyg.github.io/YT-emb/embed.html?v=vY__5xZRssM" },
+		{ title: "Reptile Pod", url: "https://kristoferyg.github.io/YT-emb/embed.html?v=pH9LvzrdEyQ" },
+		{ title: "Mammal Pod", url: "https://kristoferyg.github.io/YT-emb/embed.html?v=j-rKpc-ronI" },
+        { title: "Transmitting Data to NORAD", url: "https://kristoferyg.github.io/YT-emb/embed.html?v=ekg3HvLvk0E" },
+        { title: "An Oversight in the System", url: "https://kristoferyg.github.io/YT-emb/embed.html?v=LCziD0yJdCg" }
+    ]
+},
+{
+    folderName: "About Himself",
+    files: [
+        { title: "Electronic Cigarettes", url: "https://kristoferyg.github.io/YT-emb/embed.html?v=LOdDN111sCg" },
+        { title: "Impact on Genes", url: "https://kristoferyg.github.io/YT-emb/embed.html?v=bOoNJxXdcA0" },
+        { title: "Role in Mother Base", url: "https://kristoferyg.github.io/YT-emb/embed.html?v=__C7Ss6IDRU" }
+    ]
+},
+{
+    folderName: "Dr. Strangelove",
+    files: [
+        { title: "How Huey met Strangelove", url: "https://kristoferyg.github.io/YT-emb/embed.html?v=LKi1uSQO684" },
+        { title: "''2001: A Space Odyssey''", url: "https://kristoferyg.github.io/YT-emb/embed.html?v=jMB5jMvXNsc" }
+    ]
+},
+{
+    folderName: "Taking Down the AI Weapon",
+    files: [
+        { title: "Pupa", url: "https://kristoferyg.github.io/YT-emb/embed.html?v=sXICfPc9kn0" },
+        { title: "Chrysalis", url: "https://kristoferyg.github.io/YT-emb/embed.html?v=Kudo7CEmvBE" },
+        { title: "Cocoon", url: "https://kristoferyg.github.io/YT-emb/embed.html?v=DM2g0QRTuvM" }
+    ]
+}
+				]
+            },
+            {character: "Cécile", 
+                portrait: "https://static.wixstatic.com/media/81db72_fb042dfd73c04f8f926e48b277502bee~mv2.png",
+                folders: [
+				{
+    folderName: "AI Lab",
+    files: [
+        { title: "Facility and Security", url: "https://kristoferyg.github.io/YT-emb/embed.html?v=bBhWKnHZR54" },
+        { title: "Dr. Strangelove", url: "https://kristoferyg.github.io/YT-emb/embed.html?v=h1DBikiBjxU" },
+        { title: "ID Card", url: "https://kristoferyg.github.io/YT-emb/embed.html?v=by-UIixBl2E" }
+    ]
+},
+{
+    folderName: "Costa Rican Birds",
+    files: [
+        { title: "Birds in General", url: "https://kristoferyg.github.io/YT-emb/embed.html?v=anH_DJt3L74" },
+		{ title: "Cassette densuke", url: "https://kristoferyg.github.io/YT-emb/embed.html?v=VlUdA3xnRM4" },
+        { title: "Quetzals", url: "https://kristoferyg.github.io/YT-emb/embed.html?v=JVwHWCTxgzE" },
+		{ title: "Mimiciking animal calls", url: "https://kristoferyg.github.io/YT-emb/embed.html?v=FJxkpXz27DU" },
+        { title: "Hummingbirds", url: "https://kristoferyg.github.io/YT-emb/embed.html?v=TCKhDFsWXkU" },
+        { title: "Manakins", url: "https://kristoferyg.github.io/YT-emb/embed.html?v=f1E9tEII-3c" },
+        { title: "Three-Wattled Bellbird", url: "https://kristoferyg.github.io/YT-emb/embed.html?v=Cs52sTs0FaQ" },
+        { title: "Clay-Colored Robin", url: "https://kristoferyg.github.io/YT-emb/embed.html?v=SYzSODLNoAA" },
+        { title: "Macaws", url: "https://kristoferyg.github.io/YT-emb/embed.html?v=f8BS5LVNi7M" }
+    ]
+},
+{
+    folderName: "About Herself",
+    files: [
+        { title: "Cécile Cosima Caminades", url: "https://kristoferyg.github.io/YT-emb/embed.html?v=4dkhZK4Ks-Y" },
+        { title: "Role in Mother Base", url: "https://kristoferyg.github.io/YT-emb/embed.html?v=5QMO61MSxmw" }
+    ]
+},
+{
+    folderName: "France",
+    files: [
+        { title: "Paris", url: "https://kristoferyg.github.io/YT-emb/embed.html?v=7xV-61Wnwlc" },
+        { title: "Foreign Legion", url: "https://kristoferyg.github.io/YT-emb/embed.html?v=TqRresmncRk" },
+        { title: "National Anthem", url: "https://kristoferyg.github.io/YT-emb/embed.html?v=bXhwRsR-Ntw" },
+        { title: "The Umbrellas of Cherbourg", url: "https://kristoferyg.github.io/YT-emb/embed.html?v=L7f2JMvZaJ4g" },
+        { title: "The Day of the Jackal", url: "https://kristoferyg.github.io/YT-emb/embed.html?v=XUouhctvPyA" },
+        { title: "Nuclear Tests", url: "https://kristoferyg.github.io/YT-emb/embed.html?v=ht7AYpxBiXM" },
+        { title: "Sartre", url: "https://kristoferyg.github.io/YT-emb/embed.html?v=70OUQSUnATI" },
+        { title: "Picasso", url: "https://kristoferyg.github.io/YT-emb/embed.html?v=tJ4QiYrIMyM" },
+        { title: "Macaroons", url: "https://kristoferyg.github.io/YT-emb/embed.html?v=w1jY-cuGo9c" },
+        { title: "Wine", url: "https://kristoferyg.github.io/YT-emb/embed.html?v=M9iuQNlZxGc" },
+		{ title: "May 1968", url: "https://kristoferyg.github.io/YT-emb/embed.html?v=Xh4nU6-t6bs" }
+    ]
+}
+				]
+            },
+            {character: "Strangelove", 
+                portrait: "https://static.wixstatic.com/media/81db72_f31bdb3c93c440148776191276d323e5~mv2.png",
+                folders: [
+				{
+    folderName: "AI",
+    files: [
+        { title: "What is AI", url: "https://kristoferyg.github.io/YT-emb/embed.html?v=Jo_1nqC6Lys" },
+        { title: "''The Ghost in the Machine''", url: "https://kristoferyg.github.io/YT-emb/embed.html?v=FqsvlaKHigM" },
+        { title: "How to ID an AI", url: "https://kristoferyg.github.io/YT-emb/embed.html?v=XpqNr-0xVNc" },
+        { title: "The Turing Test", url: "https://kristoferyg.github.io/YT-emb/embed.html?v=Rri9lbI_6nwt" },
+        { title: "Models for AI", url: "https://kristoferyg.github.io/YT-emb/embed.html?v=y41vMsw2L5g" },
+        { title: "AI and the Female Brain", url: "https://kristoferyg.github.io/YT-emb/embed.html?v=px-sfAR8wEk" },
+        { title: "The Need for AI", url: "https://kristoferyg.github.io/YT-emb/embed.html?v=Tz1oifjXiRI" },
+        { title: "Expert System", url: "https://kristoferyg.github.io/YT-emb/embed.html?v=wWBnT8hRTzQ" },
+        { title: "The Future of AI", url: "https://kristoferyg.github.io/YT-emb/embed.html?v=0rFJ8gI5L0w" },
+        { title: "The ''Opposite Direction'' in AI Revolution", url: "https://kristoferyg.github.io/YT-emb/embed.html?v=QEc1Vxmrkuk" },
+        { title: "From Pupa to Butterfly", url: "https://kristoferyg.github.io/YT-emb/embed.html?v=kjn-n0KFwb0" },
+        { title: "AI Code Names", url: "https://kristoferyg.github.io/YT-emb/embed.html?v=AiLe71LaWZo" },
+        { title: "''2001: A Space Odyssey''", url: "https://kristoferyg.github.io/YT-emb/embed.html?v=8dMhGQA1We4" }
+    ]
+},
+{
+    folderName: "The Boss",
+    files: [
+        { title: "How Strangelove Met the Boss", url: "https://kristoferyg.github.io/YT-emb/embed.html?v=eOA-kvpjyrE" },
+        { title: "Why She Used Torture", url: "https://kristoferyg.github.io/YT-emb/embed.html?v=VUAOfNLZQvA" },
+        { title: "The Boss's White Horse", url: "https://kristoferyg.github.io/YT-emb/embed.html?v=2DxNwvZX970" },
+        { title: "The Boss and Peace", url: "https://kristoferyg.github.io/YT-emb/embed.html?v=iEWKvsxLXW0" }
+    ]
+},
+{
+    folderName: "About Herself",
+    files: [
+        { title: "The Origin of Strangelove", url: "https://kristoferyg.github.io/YT-emb/embed.html?v=gN6Us6nLXIY" },
+        { title: "Personal History", url: "https://kristoferyg.github.io/YT-emb/embed.html?v=YuAttXfrJOY" },
+        { title: "Role in Mother Base", url: "https://kristoferyg.github.io/YT-emb/embed.html?v=GYn6rbWgTME" }
+    ]
+},
+{
+    folderName: "People",
+    files: [
+        { title: "Huey", url: "https://kristoferyg.github.io/YT-emb/embed.html?v=3KkXctVr4Ss" },
+        { title: "Cecile", url: "https://kristoferyg.github.io/YT-emb/embed.html?v=RVhRvufPS7s" }
+    ]
+},
+{
+    folderName: "Metal Gear ZEKE",
+    files: [
+        { title: "Metal Gear ZEKE's AI", url: "https://kristoferyg.github.io/YT-emb/embed.html?v=Rducb0_aVqg" },
+        { title: "A Different AI", url: "https://kristoferyg.github.io/YT-emb/embed.html?v=lqyf2uA2W-E" },
+        { title: "VOCALOID", url: "https://kristoferyg.github.io/YT-emb/embed.html?v=cKsy1_i9FM8" }
+    ]
+}
+				]
+            },
+            {character: "Data Files", 
+                portrait: "https://static.wixstatic.com/media/81db72_d3310d9c460b44949d1e25d285964bba~mv2.png",
+                folders: [
+				{
+    folderName: "Paz's Tape",
+    files: [
+        { title: "Between Two Women", url: "https://kristoferyg.github.io/YT-emb/embed.html?v=2bG8qk10e8A" }
+    ]
+},
+{
+    folderName: "Strangelove's Memories",
+    files: [
+        { title: "A Chance Meeting", url: "https://kristoferyg.github.io/YT-emb/embed.html?v=WEZj_1y9nP8" },
+        { title: "Joy", url: "https://kristoferyg.github.io/YT-emb/embed.html?v=C9UHZXV7kfs" },
+        { title: "Separation", url: "https://kristoferyg.github.io/YT-emb/embed.html?v=3VBA7OAoFq8" }
+    ]
+},
+{
+    folderName: "Strangelove's Simulation",
+    files: [
+        { title: "Operation Snake Eater Simulation", url: "https://kristoferyg.github.io/YT-emb/embed.html?v=9G9fg_BRsJ4" }
+    ]
+},
+{
+    folderName: "Paz's Diary",
+    files: [
+        { title: "1st Entry", url: "https://kristoferyg.github.io/YT-emb/embed.html?v=SRMtQm_SxEs" },
+        { title: "2nd Entry", url: "https://kristoferyg.github.io/YT-emb/embed.html?v=1-4dZ-_6s5w" },
+        { title: "3rd Entry", url: "https://kristoferyg.github.io/YT-emb/embed.html?v=A4o7ejM6nvk" },
+        { title: "4th Entry", url: "https://kristoferyg.github.io/YT-emb/embed.html?v=NprvvzUAUDM" },
+        { title: "5th Entry", url: "https://kristoferyg.github.io/YT-emb/embed.html?v=8WdN9JOovpM" },
+        { title: "6th Entry", url: "https://kristoferyg.github.io/YT-emb/embed.html?v=3qQv4Jh98F8" },
+        { title: "7th Entry", url: "https://kristoferyg.github.io/YT-emb/embed.html?v=HLUB-HaVcmk" },
+        { title: "8th Entry", url: "https://kristoferyg.github.io/YT-emb/embed.html?v=5h3x8Wdvwnw" },
+        { title: "9th Entry", url: "https://kristoferyg.github.io/YT-emb/embed.html?v=tpYPRpDkoQI" },
+        { title: "10th Entry", url: "https://kristoferyg.github.io/YT-emb/embed.html?v=tAo6x7AcXuA" }
+    ]
+},
+{
+    folderName: "The Boss's Final Mission",
+    files: [
+        { title: "EVA's Debriefing", url: "https://kristoferyg.github.io/YT-emb/embed.html?v=3puxudp_PdI" }
+    ]
+},
+{
+    folderName: "Message from EVA",
+    files: [
+        { title: "Session 1", url: "https://kristoferyg.github.io/YT-emb/embed.html?v=9aj9PFpkESk" },
+        { title: "Session 2", url: "https://kristoferyg.github.io/YT-emb/embed.html?v=pquf0f2O56o" },
+        { title: "Session 3", url: "https://kristoferyg.github.io/YT-emb/embed.html?v=Mq91l7vK1zo" },
+        { title: "Session 4", url: "https://kristoferyg.github.io/YT-emb/embed.html?v=Y6cH4hePFuk" },
+        { title: "Session 5", url: "https://kristoferyg.github.io/YT-emb/embed.html?v=MHXZyG3JAdw" },
+        { title: "Session 6", url: "https://kristoferyg.github.io/YT-emb/embed.html?v=dobtEiBpKxE" },
+        { title: "Session 7", url: "https://kristoferyg.github.io/YT-emb/embed.html?v=_cpAPmploeQ" }
+    ]
+},
+{
+    folderName: "Secret File",
+    files: [
+        { title: "The Phone Call", url: "https://kristoferyg.github.io/YT-emb/embed.html?v=Z1dvnV0AypU" }
+    ]
+},
+					{ 
+                        folderName: "Ending", 
+                        files: [
+                            { title: "False Ending", url: "https://kristoferyg.github.io/YT-emb/embed.html?v=p8rsA5yzaNg" },
+                            { title: "True Ending", url: "https://kristoferyg.github.io/YT-emb/embed.html?v=XzfpBUxChCQ" }
+                        ] 
+						
+                    }
+				]
+            }
+        ];
+
+        const nav = document.getElementById('main-nav');
+        const library = document.getElementById('library');
+        const portraitImg = document.getElementById('portrait');
+
+        function updateScrollbarState() {
+            if (library.scrollHeight > library.clientHeight) {
+                library.classList.replace('not-scrolling', 'is-scrolling');
+            } else {
+                library.classList.replace('is-scrolling', 'not-scrolling');
+            }
+        }
+
+        // Build the Menu
+        briefingData.forEach(char => {
+            const charLi = document.createElement('li');
+            charLi.innerHTML = `<div class="menu-item" data-img="${char.portrait}">${char.character}</div>`;
+            const folderMenu = document.createElement('ul');
+            folderMenu.className = 'sub-menu';
+
+            char.folders.forEach(f => {
+                const fLi = document.createElement('li');
+                fLi.innerHTML = `<div class="menu-item sub-toggle" data-img="${char.portrait}">[+] ${f.folderName}</div>`;
+                const fileMenu = document.createElement('ul');
+                fileMenu.className = 'sub-menu';
+
+                f.files.forEach(file => {
+                    const fileLi = document.createElement('li');
+                    fileLi.innerHTML = `<a href="${file.url}" target="_blank" class="menu-item" data-img="${char.portrait}">${file.title}</a>`;
+                    fileMenu.appendChild(fileLi);
+                });
+                fLi.appendChild(fileMenu);
+                folderMenu.appendChild(fLi);
+            });
+            charLi.appendChild(folderMenu);
+            nav.appendChild(charLi);
+        });
+
+        // Click Logic (Accordion + Deep Reset)
+        document.addEventListener('click', (e) => {
+            const item = e.target;
+            if (item.classList.contains('menu-item') && item.tagName !== 'A') {
+                const parent = item.parentElement;
+                const sub = parent.querySelector('.sub-menu');
+                
+                if (sub) {
+                    const isOpening = !parent.classList.contains('active');
+                    
+                    if (isOpening) {
+                        const siblings = parent.parentElement.children;
+                        for (let sibling of siblings) {
+                            if (sibling !== parent) {
+                                sibling.classList.remove('active');
+                                const toggle = sibling.querySelector('.sub-toggle');
+                                if (toggle) toggle.innerText = toggle.innerText.replace('[-]', '[+]');
+                                sibling.querySelectorAll('li.active').forEach(n => {
+                                    n.classList.remove('active');
+                                    const t = n.querySelector('.sub-toggle');
+                                    if(t) t.innerText = t.innerText.replace('[-]', '[+]');
+                                });
+                            }
+                        }
+                        parent.classList.add('active');
+                    } else {
+                        parent.classList.remove('active');
+                        parent.querySelectorAll('li.active').forEach(n => {
+                            n.classList.remove('active');
+                            const t = n.querySelector('.sub-toggle');
+                            if(t) t.innerText = t.innerText.replace('[-]', '[+]');
+                        });
+                    }
+
+                    if (item.classList.contains('sub-toggle')) {
+                        const active = parent.classList.contains('active');
+                        item.innerText = active 
+                            ? item.innerText.replace('[+]', '[-]') 
+                            : item.innerText.replace('[-]', '[+]');
+                    }
+                    setTimeout(updateScrollbarState, 10);
+                }
+            }
+        });
+
+        // Portrait Hover Update
+        document.addEventListener('mouseover', (e) => {
+            if(e.target.classList.contains('menu-item')) {
+                const newImg = e.target.getAttribute('data-img');
+                if(newImg && portraitImg.src !== newImg) {
+                    portraitImg.style.opacity = '0';
+                    setTimeout(() => {
+                        portraitImg.src = newImg;
+                        portraitImg.style.opacity = '1';
+                    }, 100);
+                }
+            }
+        });
+
+        // Initialize first image
+        if(briefingData.length > 0) {
+            portraitImg.src = briefingData[0].portrait;
+            portraitImg.style.opacity = '1';
+        }
+
+        updateScrollbarState();
+    </script>
+</body>
+</html>
