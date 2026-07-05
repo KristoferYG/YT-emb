@@ -1,0 +1,501 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MGS Walkman UI</title>
+    <style>
+        :root {
+            --bg-color: #1c1815;
+            --panel-bg: rgba(28, 24, 21, 0.85);
+            --text-color: #e3deda;
+            --text-dim: #8c857f;
+            --highlight-orange: #ff7800;
+            --font-family: 'Courier New', Courier, monospace;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            user-select: none;
+        }
+
+        body {
+            background-color: #000;
+            color: var(--text-color);
+            font-family: var(--font-family);
+            font-weight: bold;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            overflow: hidden;
+        }
+
+        /* Outer Screen Container (CRT Effect) */
+        .screen {
+            width: 800px;
+            height: 600px;
+            background-color: var(--bg-color);
+            background-image: 
+                radial-gradient(circle, transparent 60%, rgba(0,0,0,0.4)),
+                linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.3) 50%),
+                linear-gradient(90deg, rgba(255, 0, 0, 0.03), rgba(0, 255, 0, 0.01), rgba(0, 0, 255, 0.03));
+            background-size: 100% 100%, 100% 4px, 6px 100%;
+            border: 4px solid #2d2621;
+            position: relative;
+            display: grid;
+            grid-template-rows: auto 1fr auto;
+            box-shadow: 0 0 30px rgba(0,0,0,0.8);
+        }
+
+        /* Top Header Area */
+        .header-container {
+            padding: 10px 20px 5px 20px;
+        }
+
+        .walkman-title {
+            font-size: 14px;
+            letter-spacing: 2px;
+            margin-bottom: 5px;
+            color: var(--text-color);
+        }
+
+        .current-track-banner {
+            background-color: var(--text-color);
+            color: #1c1815;
+            padding: 6px 15px;
+            display: flex;
+            align-items: center;
+            font-size: 18px;
+            letter-spacing: 1px;
+        }
+
+        .current-track-banner .icon {
+            margin-right: 15px;
+            font-size: 16px;
+        }
+
+        /* Main Workspace Layout */
+        .main-content {
+            display: grid;
+            grid-template-columns: 60px 1fr 350px;
+            padding: 10px 20px;
+            gap: 15px;
+            align-items: center;
+            overflow: hidden;
+        }
+
+        /* Left Sidebar (Rotated Text) */
+        .sidebar {
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            align-items: center;
+            height: 80%;
+            border-right: 1px solid var(--text-dim);
+            font-size: 11px;
+            color: var(--text-dim);
+            padding-right: 10px;
+        }
+        .rotated-text {
+            transform: rotate(-90deg);
+            white-space: nowrap;
+        }
+        .wm-logo-vertical {
+            font-weight: 900;
+            letter-spacing: -1px;
+        }
+
+        /* Center Artwork Area */
+        .graphic-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+            height: 100%;
+        }
+
+        .headphone-svg {
+            width: 220px;
+            height: 220px;
+            stroke: var(--text-color);
+            fill: none;
+            stroke-width: 2;
+            opacity: 0.85;
+        }
+
+        /* Playback Controls Overlay */
+        .controls-overlay {
+            position: absolute;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+            z-index: 10;
+        }
+
+        .dpad-row {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .dpad-btn {
+            background: none;
+            border: none;
+            color: var(--text-dim);
+            font-family: var(--font-family);
+            font-size: 18px;
+            cursor: pointer;
+        }
+        .dpad-btn:hover {
+            color: var(--text-color);
+        }
+
+        .action-container {
+            background: var(--panel-bg);
+            border: 1px solid var(--text-dim);
+            padding: 5px 15px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .action-btn {
+            background: none;
+            border: none;
+            color: var(--text-color);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .shuffle-box {
+            font-size: 12px;
+            border-right: 1px solid var(--text-dim);
+            padding-right: 15px;
+            color: var(--text-dim);
+        }
+        .shuffle-box.active {
+            color: var(--highlight-orange);
+        }
+
+        .circle-btn {
+            width: 24px;
+            height: 24px;
+            border: 2px solid var(--text-color);
+            border-radius: 50%;
+            position: relative;
+            cursor: pointer;
+        }
+        .circle-btn::after {
+            content: '';
+            width: 8px;
+            height: 8px;
+            background-color: var(--text-color);
+            border-radius: 50%;
+            position: absolute;
+            top: 6px;
+            left: 6px;
+        }
+
+        .square-btn {
+            width: 20px;
+            height: 20px;
+            border: 2px solid var(--text-color);
+            cursor: pointer;
+        }
+
+        .zappin-box {
+            font-size: 12px;
+            color: var(--text-dim);
+        }
+
+        /* Right Side Playlist Container */
+        .playlist-container {
+            background: var(--panel-bg);
+            border: 1px solid var(--text-dim);
+            height: 380px;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .playlist-header {
+            background: var(--text-color);
+            color: #1c1815;
+            padding: 6px 10px;
+            font-size: 13px;
+            letter-spacing: 1px;
+            clip-path: polygon(0 0, 85% 0, 100% 100%, 0 100%);
+            width: 60%;
+        }
+
+        .track-list {
+            list-style: none;
+            overflow-y: scroll; /* Scroll active style */
+            flex-grow: 1;
+            padding: 5px 0;
+        }
+
+        /* Custom Scrollbar Styling */
+        .track-list::-webkit-scrollbar {
+            width: 6px;
+        }
+        .track-list::-webkit-scrollbar-track {
+            background: rgba(0,0,0,0.1);
+        }
+        .track-list::-webkit-scrollbar-thumb {
+            background: var(--text-dim);
+        }
+        .track-list::-webkit-scrollbar-thumb:hover {
+            background: var(--text-color);
+        }
+
+        .track-item {
+            display: flex;
+            padding: 8px 12px;
+            font-size: 14px;
+            cursor: pointer;
+            border: 1px solid transparent;
+            color: var(--text-color);
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .track-item .track-num {
+            margin-right: 15px;
+            color: var(--text-dim);
+        }
+
+        .track-item:hover {
+            background: rgba(227, 222, 218, 0.1);
+        }
+
+        .track-item.selected {
+            background-color: rgba(227, 222, 218, 0.25);
+            border: 1px solid var(--text-color);
+        }
+        .track-item.selected .track-num {
+            color: var(--text-color);
+        }
+
+        /* Bottom Status Bar */
+        .bottom-bar {
+            background-color: #000;
+            padding: 12px 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            border-top: 2px solid #2d2621;
+        }
+
+        .status-indicator {
+            color: var(--highlight-orange);
+            font-size: 20px;
+            letter-spacing: 2px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .orange-square {
+            width: 12px;
+            height: 12px;
+            background-color: var(--highlight-orange);
+            display: inline-block;
+        }
+    </style>
+</head>
+<body>
+
+<div class="screen">
+    <!-- Top Area -->
+    <div class="header-container">
+        <div class="walkman-title">WALKMAN</div>
+        <div class="current-track-banner">
+            <span class="icon">♫ ⌕</span>
+            <span id="current-track-title">---</span>
+        </div>
+    </div>
+
+    <!-- Main Workspace -->
+    <div class="main-content">
+        <div class="sidebar">
+            <div class="rotated-text">(NWD-W202)</div>
+            <div class="rotated-text wm-logo-vertical">W. WALKMAN</div>
+        </div>
+
+        <!-- Center Controls -->
+        <div class="graphic-container">
+            <svg class="headphone-svg" viewBox="0 0 100 100">
+                <path d="M 50,35 C 20,5 2,25 2,55 C 2,80 50,98 50,98 C 50,98 98,80 98,55 C 98,25 80,5 50,35 Z" />
+                <rect x="18" y="32" width="28" height="8" rx="2" transform="rotate(-15, 32, 36)"/>
+                <rect x="54" y="32" width="28" height="8" rx="2" transform="rotate(15, 68, 36)"/>
+            </svg>
+
+            <div class="controls-overlay">
+                <button class="dpad-btn" id="btn-up" title="Previous Track">▲<br><small>⏮</small></button>
+                <div class="dpad-row">
+                    <div class="action-container">
+                        <div class="shuffle-box" id="shuffle-toggle" style="cursor:pointer;">SHUFFLE</div>
+                        <button class="action-btn square-btn" id="btn-stop" title="Stop"></button>
+                        <button class="action-btn circle-btn" id="btn-play" title="Play"></button>
+                        <div class="zappin-box">⚡ ZAPPIN™</div>
+                    </div>
+                </div>
+                <button class="dpad-btn" id="btn-down" title="Next Track"><small>⏭</small><br>▼</button>
+            </div>
+        </div>
+
+        <!-- Playlist -->
+        <div class="playlist-container">
+            <div class="playlist-header">♫ PLAY LIST</div>
+            <ul class="track-list" id="track-list-ul">
+                <!-- Tracks rendered via Javascript -->
+            </ul>
+        </div>
+    </div>
+
+    <!-- Bottom Status Ribbon -->
+    <div class="bottom-bar">
+        <div class="status-indicator">
+            <span id="status-text">STOP</span>
+            <span class="orange-square"></span>
+        </div>
+    </div>
+</div>
+
+<script>
+    const tracks = [
+    { name: "MG20YearsHistory 1", url: "https://kristoferyg.github.io/YT-emb/embed.html?v=g2ug5wVwVsg" },
+    { name: "MG20YearsHistory 2", url: "https://kristoferyg.github.io/YT-emb/embed.html?v=z5fRbYjM-iY" },
+    { name: "MG20YearsHistory 3", url: "https://kristoferyg.github.io/YT-emb/embed.html?v=U-xW6fhMKo4" },
+    { name: "MG20YearsHistory 4", url: "https://kristoferyg.github.io/YT-emb/embed.html?v=GlQEaQsv3aw" },
+    { name: "Confession",         url: "https://kristoferyg.github.io/YT-emb/embed.html?v=tpiJZyqGqeY" },
+    { name: "Enclosure",          url: "https://kristoferyg.github.io/YT-emb/embed.html?v=XKX2FOPjV-U" },
+    { name: "Everything Begins",  url: "https://kristoferyg.github.io/YT-emb/embed.html?v=9MYZfAlKrq4" },
+    { name: "Love Theme",         url: "https://kristoferyg.github.io/YT-emb/embed.html?v=tPa6wdjlHwA" },
+    { name: "View of Deep Snow",  url: "https://kristoferyg.github.io/YT-emb/embed.html?v=jo7OOk9Omcs" },
+    { name: "Show Time",          url: "https://kristoferyg.github.io/YT-emb/embed.html?v=1qdwWaJ2XwE" },
+    { name: "Destiny's Call",     url: "https://kristoferyg.github.io/YT-emb/embed.html?v=Qi0gFWelNMg" },
+    { name: "Beyond the Bounds",  url: "https://kristoferyg.github.io/YT-emb/embed.html?v=3cVTNtumokg" },
+    { name: "Snake Eater",        url: "https://kristoferyg.github.io/YT-emb/embed.html?v=Ui74K3vfx9I" },
+    { name: "Calling to the Night", url: "https://kristoferyg.github.io/YT-emb/embed.html?v=MwuxdgnxA4Q" },
+    { name: "Raxa",               url: "https://kristoferyg.github.io/YT-emb/embed.html?v=Oyxs01ay298" },
+    { name: "Inori-no-Uta", url: "https://kristoferyg.github.io/YT-emb/embed.html?v=dLnv0MwIDFY" }
+];
+    let currentIndex = 0;
+    let isPlaying = false;
+    let isShuffle = false;
+
+    const trackListUl = document.getElementById('track-list-ul');
+    const currentTrackTitle = document.getElementById('current-track-title');
+    const statusText = document.getElementById('status-text');
+    const shuffleToggle = document.getElementById('shuffle-toggle');
+    const btnPlay = document.getElementById('btn-play');
+    const btnStop = document.getElementById('btn-stop');
+    const btnUp = document.getElementById('btn-up');
+    const btnDown = document.getElementById('btn-down');
+
+    function renderPlaylist() {
+        trackListUl.innerHTML = '';
+        tracks.forEach((track, index) => {
+            const li = document.createElement('li');
+            li.className = `track-item ${index === currentIndex ? 'selected' : ''}`;
+            
+            const trackNum = String(index + 1).padStart(2, '0');
+            li.innerHTML = `<span class="track-num">${trackNum}</span><span class="track-name">${track.name}</span>`;
+            
+            li.addEventListener('click', () => {
+                selectTrack(index);
+            });
+            trackListUl.appendChild(li);
+        });
+        
+        const selectedEl = trackListUl.querySelector('.selected');
+        if (selectedEl) {
+            selectedEl.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+        }
+    }
+
+    function selectTrack(index) {
+        if (tracks.length === 0) return;
+        currentIndex = index;
+        currentTrackTitle.textContent = tracks[currentIndex].name;
+        renderPlaylist();
+    }
+
+    function playTrack() {
+        if (tracks.length === 0) return;
+        isPlaying = true;
+        statusText.textContent = "PLAY";
+        btnPlay.style.borderColor = "var(--highlight-orange)";
+
+        const currentUrl = tracks[currentIndex].url;
+        if (currentUrl && currentUrl.trim() !== "") {
+            window.open(currentUrl, '_blank');
+        }
+    }
+
+    function stopTrack() {
+        isPlaying = false;
+        statusText.textContent = "STOP";
+        btnPlay.style.borderColor = "var(--text-color)";
+    }
+
+    function nextTrack() {
+        if (tracks.length === 0) return;
+        if (isShuffle) {
+            let nextIndex = Math.floor(Math.random() * tracks.length);
+            selectTrack(nextIndex);
+        } else {
+            let nextIndex = (currentIndex + 1) % tracks.length;
+            selectTrack(nextIndex);
+        }
+    }
+
+    function prevTrack() {
+        if (tracks.length === 0) return;
+        let prevIndex = (currentIndex - 1 + tracks.length) % tracks.length;
+        selectTrack(prevIndex);
+    }
+
+    // Control triggers
+    btnPlay.addEventListener('click', playTrack);
+    btnStop.addEventListener('click', stopTrack);
+    btnDown.addEventListener('click', nextTrack);
+    btnUp.addEventListener('click', prevTrack);
+    
+    shuffleToggle.addEventListener('click', () => {
+        isShuffle = !isShuffle;
+        shuffleToggle.classList.toggle('active', isShuffle);
+    });
+
+    // Keyboard controls match system controls (Enter/Space to Play Link)
+    document.addEventListener('keydown', (e) => {
+        if (e.key === "ArrowUp") {
+            e.preventDefault();
+            prevTrack();
+        } else if (e.key === "ArrowDown") {
+            e.preventDefault();
+            nextTrack();
+        } else if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            playTrack();
+        } else if (e.key === "Escape") {
+            e.preventDefault();
+            stopTrack();
+        }
+    });
+
+    // Initial sequence build
+    selectTrack(0);
+</script>
+
+</body>
+</html>
